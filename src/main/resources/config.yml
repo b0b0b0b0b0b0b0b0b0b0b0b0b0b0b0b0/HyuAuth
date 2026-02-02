@@ -1,0 +1,4 @@
+settings:
+  login_timeout_seconds: 60
+  database:
+    file: "auth.db"

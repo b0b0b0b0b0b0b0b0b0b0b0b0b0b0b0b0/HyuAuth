@@ -1,0 +1,29 @@
+# === commands ===
+
+commands.login.already_logged_in=Вы уже авторизованы!
+commands.login.not_registered=Вам нужно зарегистрироваться! Используйте /register <пароль>
+commands.login.usage=Использование: /login <пароль>
+commands.login.success=Вход выполнен успешно!
+commands.login.failed=Неверный пароль!
+
+commands.register.already_logged_in=Вы уже авторизованы!
+commands.register.already_registered=У вас уже есть аккаунт! Используйте /login <пароль>
+commands.register.usage=Использование: /register <пароль>
+commands.register.success=Регистрация выполнена успешно!
+
+commands.logout.not_logged_in=Вы не авторизованы.
+commands.logout.success=Вы успешно вышли из системы!
+
+commands.authreset.usage=Использование: /authreset <игрок>
+commands.authreset.player_not_found=Игрок {0} не найден.
+commands.authreset.success=Аккаунт игрока {0} успешно сброшен.
+
+commands.authconfig.usage=Использование: /authconfig <секунды>
+commands.authconfig.current=Текущий таймаут: {0}с
+commands.authconfig.success=Таймаут входа установлен на {0} секунд.
+commands.authconfig.invalid_number=Неверное число.
+
+# === messages ===
+
+messages.blocked=ЗАБЛОКИРОВАНО! Пожалуйста, используйте /login или /register
+messages.timeout_kick=Время на вход истекло! Пожалуйста, переподключитесь.

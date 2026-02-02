@@ -1,0 +1,9 @@
+{
+    "Group": "bm.b0b0b0",
+    "Name": "HyuAuth",
+    "Version": "1.0.0",
+    "Description": "Secure authentication mod for Hytale with SQLite and password encryption",
+    "Main": "bm.b0b0b0.hyuauth.HyuAuthPlugin",
+    "ServerVersion": "*",
+    "IncludesAssetPack": true
+}

@@ -1,0 +1,29 @@
+# === commands ===
+
+hyuauth.commands.login.already_logged_in=You are already logged in!
+hyuauth.commands.login.not_registered=You need to register! Use /register <password>
+hyuauth.commands.login.usage=Usage: /login <password>
+hyuauth.commands.login.success=Login successful!
+hyuauth.commands.login.failed=Incorrect password!
+
+hyuauth.commands.register.already_logged_in=You are already logged in!
+hyuauth.commands.register.already_registered=You already have an account! Use /login <password>
+hyuauth.commands.register.usage=Usage: /register <password>
+hyuauth.commands.register.success=Registration successful!
+
+hyuauth.commands.logout.not_logged_in=You are not logged in.
+hyuauth.commands.logout.success=You have successfully logged out!
+
+hyuauth.commands.authreset.usage=Usage: /authreset <player>
+hyuauth.commands.authreset.player_not_found=Player {0} not found.
+hyuauth.commands.authreset.success=Account for player {0} has been reset successfully.
+
+hyuauth.commands.authconfig.usage=Usage: /authconfig <seconds>
+hyuauth.commands.authconfig.current=Current timeout: {0}s
+hyuauth.commands.authconfig.success=Login timeout configured to {0} seconds.
+hyuauth.commands.authconfig.invalid_number=Invalid number.
+
+# === messages ===
+
+hyuauth.messages.blocked=BLOCKED! Please use /login or /register
+hyuauth.messages.timeout_kick=Login time expired! Please reconnect.

@@ -1,0 +1,29 @@
+# === commands ===
+
+commands.login.already_logged_in=You are already logged in!
+commands.login.not_registered=You need to register! Use /register <password>
+commands.login.usage=Usage: /login <password>
+commands.login.success=Login successful!
+commands.login.failed=Incorrect password!
+
+commands.register.already_logged_in=You are already logged in!
+commands.register.already_registered=You already have an account! Use /login <password>
+commands.register.usage=Usage: /register <password>
+commands.register.success=Registration successful!
+
+commands.logout.not_logged_in=You are not logged in.
+commands.logout.success=You have successfully logged out!
+
+commands.authreset.usage=Usage: /authreset <player>
+commands.authreset.player_not_found=Player {0} not found.
+commands.authreset.success=Account for player {0} has been reset successfully.
+
+commands.authconfig.usage=Usage: /authconfig <seconds>
+commands.authconfig.current=Current timeout: {0}s
+commands.authconfig.success=Login timeout configured to {0} seconds.
+commands.authconfig.invalid_number=Invalid number.
+
+# === messages ===
+
+messages.blocked=BLOCKED! Please use /login or /register
+messages.timeout_kick=Login time expired! Please reconnect.
