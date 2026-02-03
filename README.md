@@ -1,5 +1,7 @@
 # HyuAuth
 
+[English version](README_EN.md)
+
 Плагин авторизации для Hytale серверов с поддержкой регистрации и входа через UI окна.
 
 ## Возможности
@@ -65,4 +67,3 @@ settings:
 - `username` (TEXT, NOT NULL) - имя игрока
 - `password_hash` (TEXT, NOT NULL) - BCrypt хеш пароля
 - `created_at` (INTEGER, NOT NULL) - время создания аккаунта в миллисекундах
-
