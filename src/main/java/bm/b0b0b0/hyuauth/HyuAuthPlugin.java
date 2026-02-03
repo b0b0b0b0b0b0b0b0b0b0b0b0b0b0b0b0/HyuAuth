@@ -72,27 +72,12 @@ public class HyuAuthPlugin extends JavaPlugin {
         getLogger().atInfo().log("[HyuAuth] Starting authentication plugin...");
         getLogger().atInfo().log("================================================");
         
-        getLogger().atInfo().log("[HyuAuth] Starting session cleanup task...");
-        startSessionCleanupTask();
-        getLogger().atInfo().log("[HyuAuth] Session cleanup task started");
-        
         getLogger().atInfo().log("================================================");
         getLogger().atInfo().log("[HyuAuth] Plugin started successfully!");
         getLogger().atInfo().log("[HyuAuth] Players will see authentication UI window");
         getLogger().atInfo().log("================================================");
     }
 
-    private void startSessionCleanupTask() {
-        java.util.Timer timer = new java.util.Timer(true);
-        timer.schedule(new java.util.TimerTask() {
-            @Override
-            public void run() {
-                if (sessionManager != null) {
-                    sessionManager.cleanupExpiredSessions();
-                }
-            }
-        }, 60000L, 60000L);
-    }
 
     public SessionManager getSessionManager() {
         return sessionManager;

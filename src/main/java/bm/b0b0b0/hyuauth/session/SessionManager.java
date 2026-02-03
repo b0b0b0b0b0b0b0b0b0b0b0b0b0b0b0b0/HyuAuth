@@ -1,15 +1,19 @@
 package bm.b0b0b0.hyuauth.session;
 
-import java.util.Map;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class SessionManager {
-    private final Map<String, PlayerSession> sessions = new ConcurrentHashMap<>();
+    private final Cache<String, PlayerSession> sessions;
     private final int sessionTimeoutMinutes;
 
     public SessionManager(int sessionTimeoutMinutes) {
         this.sessionTimeoutMinutes = sessionTimeoutMinutes;
+        this.sessions = Caffeine.newBuilder()
+                .expireAfterWrite(sessionTimeoutMinutes, TimeUnit.MINUTES)
+                .build();
         System.out.println("[HyuAuth] SessionManager initialized with timeout: " + sessionTimeoutMinutes + " minutes");
     }
 
@@ -25,11 +29,6 @@ public class SessionManager {
             this.uuid = uuid;
             this.lastLoginTime = System.currentTimeMillis();
         }
-
-        public boolean isValid(int timeoutMinutes) {
-            long elapsedMinutes = (System.currentTimeMillis() - lastLoginTime) / (1000 * 60);
-            return elapsedMinutes < timeoutMinutes;
-        }
     }
 
     public void createSession(String ipAddress, String username, UUID uuid) {
@@ -40,37 +39,27 @@ public class SessionManager {
 
     public PlayerSession getSession(String ipAddress, String username) {
         String sessionKey = ipAddress + ":" + username.toLowerCase();
-        PlayerSession session = sessions.get(sessionKey);
-        if (session != null && session.isValid(sessionTimeoutMinutes)) {
+        PlayerSession session = sessions.getIfPresent(sessionKey);
+        if (session != null) {
+            System.out.println("[HyuAuth] [SessionManager] Valid session found for " + username + " from " + ipAddress);
             return session;
         }
-        if (session != null) {
-            sessions.remove(sessionKey);
-            System.out.println("[HyuAuth] [SessionManager] Session expired for " + username + " from " + ipAddress);
-        }
+        System.out.println("[HyuAuth] [SessionManager] No valid session for " + username + " from " + ipAddress);
         return null;
     }
 
     public void removeSession(String ipAddress, String username) {
         String sessionKey = ipAddress + ":" + username.toLowerCase();
-        sessions.remove(sessionKey);
+        sessions.invalidate(sessionKey);
         System.out.println("[HyuAuth] [SessionManager] Session removed for " + username + " from " + ipAddress);
     }
 
-    public void cleanupExpiredSessions() {
-        int removed = 0;
-        for (Map.Entry<String, PlayerSession> entry : sessions.entrySet()) {
-            if (!entry.getValue().isValid(sessionTimeoutMinutes)) {
-                sessions.remove(entry.getKey());
-                removed++;
-            }
-        }
-        if (removed > 0) {
-            System.out.println("[HyuAuth] [SessionManager] Cleaned up " + removed + " expired sessions");
-        }
+    public void removeSessionByUuid(UUID uuid) {
+        sessions.asMap().entrySet().removeIf(entry -> entry.getValue().uuid.equals(uuid));
     }
 
-    public void removeSessionByUuid(UUID uuid) {
-        sessions.entrySet().removeIf(entry -> entry.getValue().uuid.equals(uuid));
+    public void cleanupExpiredSessions() {
+        sessions.cleanUp();
+        System.out.println("[HyuAuth] [SessionManager] Cleaned up expired sessions");
     }
 }
