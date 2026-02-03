@@ -15,6 +15,8 @@ public class DatabaseManager {
 
     static {
         try {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "off");
+            System.setProperty("org.slf4j.simpleLogger.log.org.sqlite", "off");
             Class.forName("org.sqlite.JDBC");
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("SQLite JDBC driver not found", e);

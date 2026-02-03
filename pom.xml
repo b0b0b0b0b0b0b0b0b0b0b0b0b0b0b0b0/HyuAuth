@@ -48,7 +48,7 @@
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
-            <version>3.44.1.0</version>
+            <version>3.30.1</version>
         </dependency>
         <dependency>
             <groupId>org.mindrot</groupId>
@@ -59,11 +59,6 @@
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
             <version>2.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-nop</artifactId>
-            <version>2.0.9</version>
         </dependency>
     </dependencies>
 
@@ -104,12 +99,6 @@
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
                                     </excludes>
-                                </filter>
-                                <filter>
-                                    <artifact>org.xerial:sqlite-jdbc</artifact>
-                                    <includes>
-                                        <include>**</include>
-                                    </includes>
                                 </filter>
                             </filters>
                             <transformers>
