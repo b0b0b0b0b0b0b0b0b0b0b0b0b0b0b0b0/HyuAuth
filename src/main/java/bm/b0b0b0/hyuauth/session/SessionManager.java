@@ -47,19 +47,4 @@ public class SessionManager {
         System.out.println("[HyuAuth] [SessionManager] No valid session for " + username + " from " + ipAddress);
         return null;
     }
-
-    public void removeSession(String ipAddress, String username) {
-        String sessionKey = ipAddress + ":" + username.toLowerCase();
-        sessions.invalidate(sessionKey);
-        System.out.println("[HyuAuth] [SessionManager] Session removed for " + username + " from " + ipAddress);
-    }
-
-    public void removeSessionByUuid(UUID uuid) {
-        sessions.asMap().entrySet().removeIf(entry -> entry.getValue().uuid.equals(uuid));
-    }
-
-    public void cleanupExpiredSessions() {
-        sessions.cleanUp();
-        System.out.println("[HyuAuth] [SessionManager] Cleaned up expired sessions");
-    }
 }
