@@ -3,6 +3,7 @@ package bm.b0b0b0.hyuauth.pages;
 import bm.b0b0b0.hyuauth.data.AuthResult;
 import bm.b0b0b0.hyuauth.services.AuthService;
 import bm.b0b0b0.hyuauth.session.SessionManager;
+import bm.b0b0b0.hyuauth.system.PlayerAuthMovementSystem;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -38,6 +39,9 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
     public void build(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder commandBuilder, @Nonnull UIEventBuilder eventBuilder, @Nonnull Store<EntityStore> store) {
         commandBuilder.append("LoginPage.ui");
         this.startTimeoutTimer(ref, store);
+        @SuppressWarnings("deprecation")
+        UUID playerUuid = this.playerRef.getUuid();
+        PlayerAuthMovementSystem.markPageOpen(playerUuid);
         eventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#PasswordField", EventData.of("@Password", "#PasswordField.Value"), false);
         eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#LoginGroup #SubmitButton", EventData.of("Button", "SubmitButton"), true);
         eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#LoginGroup #CancelButton", EventData.of("Button", "CancelButton"), true);
@@ -52,6 +56,10 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
             Player playerComponent = store.getComponent(ref, Player.getComponentType());
             if (playerComponent != null && data.pressedButton != null) {
                 if (data.pressedButton.equals("CancelButton")) {
+                    @SuppressWarnings("deprecation")
+                    UUID playerUuid = this.playerRef.getUuid();
+                    PlayerAuthMovementSystem.markPageClosed(playerUuid);
+                    this.cancelTimeout();
                     this.playerRef.getPacketHandler().disconnect("Вы не можете играть на этом сервере без авторизации.");
                 } else if (data.pressedButton.equals("SubmitButton")) {
                     this.handlePasswordAuthentication(ref, store, playerComponent);
@@ -92,9 +100,13 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
             com.hypixel.hytale.server.core.Message successMessage = com.hypixel.hytale.server.core.Message.raw("Авторизация успешна!")
                     .color("#00FF00")
                     .bold(true);
+            System.out.println("[HyuAuth] [LoginPage] Sending success message to player");
             playerComponent.sendMessage(successMessage);
+            System.out.println("[HyuAuth] [LoginPage] Success message sent, closing page");
+            PlayerAuthMovementSystem.markPageClosed(playerUuid);
             this.cancelTimeout();
             this.close();
+            System.out.println("[HyuAuth] [LoginPage] Page closed");
         }
     }
 
@@ -141,18 +153,28 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
             @Override
             public void run() {
                 world.execute(() -> {
-                    Player playerComponent = store.getComponent(ref, Player.getComponentType());
-                    if (playerComponent != null) {
-                        @SuppressWarnings("deprecation")
-                        UUID playerUuid = LoginPage.this.playerRef.getUuid();
-                        Boolean isAuthenticated = AuthService.GetInstance().GetPlayer(playerUuid);
-                        System.out.println("[HyuAuth] [LoginPage] Timeout check - UUID: " + playerUuid + ", isAuthenticated: " + isAuthenticated);
-                        if (isAuthenticated == null || !isAuthenticated) {
-                            System.out.println("[HyuAuth] [LoginPage] Kicking player due to timeout");
-                            LoginPage.this.playerRef.getPacketHandler().disconnect("Время на вход истекло! Пожалуйста, переподключитесь.");
-                        } else {
-                            System.out.println("[HyuAuth] [LoginPage] Player is authenticated, not kicking");
+                    try {
+                        if (!ref.isValid()) {
+                            System.out.println("[HyuAuth] [LoginPage] Ref is invalid, cancelling timeout check");
+                            return;
                         }
+                        Player playerComponent = store.getComponent(ref, Player.getComponentType());
+                        if (playerComponent != null) {
+                            @SuppressWarnings("deprecation")
+                            UUID playerUuid = LoginPage.this.playerRef.getUuid();
+                            Boolean isAuthenticated = AuthService.GetInstance().GetPlayer(playerUuid);
+                            System.out.println("[HyuAuth] [LoginPage] Timeout check - UUID: " + playerUuid + ", isAuthenticated: " + isAuthenticated);
+                            if (isAuthenticated == null || !isAuthenticated) {
+                                System.out.println("[HyuAuth] [LoginPage] Kicking player due to timeout");
+                                LoginPage.this.playerRef.getPacketHandler().disconnect("Время на вход истекло! Пожалуйста, переподключитесь.");
+                            } else {
+                                System.out.println("[HyuAuth] [LoginPage] Player is authenticated, not kicking");
+                            }
+                        }
+                    } catch (IllegalStateException e) {
+                        System.out.println("[HyuAuth] [LoginPage] Ref is invalid during timeout check: " + e.getMessage());
+                    } catch (Exception e) {
+                        System.out.println("[HyuAuth] [LoginPage] Error in timeout check: " + e.getMessage());
                     }
                 });
             }

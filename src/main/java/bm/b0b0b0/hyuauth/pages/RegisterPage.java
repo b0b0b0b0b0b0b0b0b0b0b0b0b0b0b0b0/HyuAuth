@@ -3,6 +3,7 @@ package bm.b0b0b0.hyuauth.pages;
 import bm.b0b0b0.hyuauth.data.AuthResult;
 import bm.b0b0b0.hyuauth.services.AuthService;
 import bm.b0b0b0.hyuauth.session.SessionManager;
+import bm.b0b0b0.hyuauth.system.PlayerAuthMovementSystem;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -39,6 +40,9 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
     public void build(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder commandBuilder, @Nonnull UIEventBuilder eventBuilder, @Nonnull Store<EntityStore> store) {
         commandBuilder.append("RegisterPage.ui");
         this.startTimeoutTimer(ref, store);
+        @SuppressWarnings("deprecation")
+        UUID playerUuid = this.playerRef.getUuid();
+        PlayerAuthMovementSystem.markPageOpen(playerUuid);
         eventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#PasswordField", EventData.of("@Password", "#PasswordField.Value"), false);
         eventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#ConfirmPasswordField", EventData.of("@ConfirmPassword", "#ConfirmPasswordField.Value"), false);
         eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#SubmitButton", EventData.of("Button", "SubmitButton"), true);
@@ -56,6 +60,10 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
             Player playerComponent = store.getComponent(ref, Player.getComponentType());
             if (playerComponent != null && data.PressedButton != null) {
                 if (data.PressedButton.equals("CancelButton")) {
+                    @SuppressWarnings("deprecation")
+                    UUID playerUuid = this.playerRef.getUuid();
+                    PlayerAuthMovementSystem.markPageClosed(playerUuid);
+                    this.cancelTimeout();
                     this.playerRef.getPacketHandler().disconnect("Вам нужно зарегистрироваться для игры на этом сервере.");
                 } else if (data.PressedButton.equals("SubmitButton")) {
                     System.out.println("[HyuAuth] [RegisterPage] Submit button pressed, validating fields...");
@@ -122,9 +130,13 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
             com.hypixel.hytale.server.core.Message successMessage = com.hypixel.hytale.server.core.Message.raw("Регистрация успешна!")
                     .color("#00FF00")
                     .bold(true);
+            System.out.println("[HyuAuth] [RegisterPage] Sending success message to player");
             playerComponent.sendMessage(successMessage);
+            System.out.println("[HyuAuth] [RegisterPage] Success message sent, closing page");
+            PlayerAuthMovementSystem.markPageClosed(playerUuid);
             this.cancelTimeout();
             this.close();
+            System.out.println("[HyuAuth] [RegisterPage] Page closed");
         }
     }
 
@@ -171,18 +183,28 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
             @Override
             public void run() {
                 world.execute(() -> {
-                    Player playerComponent = store.getComponent(ref, Player.getComponentType());
-                    if (playerComponent != null) {
-                        @SuppressWarnings("deprecation")
-                        UUID playerUuid = RegisterPage.this.playerRef.getUuid();
-                        Boolean isAuthenticated = AuthService.GetInstance().GetPlayer(playerUuid);
-                        System.out.println("[HyuAuth] [RegisterPage] Timeout check - UUID: " + playerUuid + ", isAuthenticated: " + isAuthenticated);
-                        if (isAuthenticated == null || !isAuthenticated) {
-                            System.out.println("[HyuAuth] [RegisterPage] Kicking player due to timeout");
-                            RegisterPage.this.playerRef.getPacketHandler().disconnect("Время на вход истекло! Пожалуйста, переподключитесь.");
-                        } else {
-                            System.out.println("[HyuAuth] [RegisterPage] Player is authenticated, not kicking");
+                    try {
+                        if (!ref.isValid()) {
+                            System.out.println("[HyuAuth] [RegisterPage] Ref is invalid, cancelling timeout check");
+                            return;
                         }
+                        Player playerComponent = store.getComponent(ref, Player.getComponentType());
+                        if (playerComponent != null) {
+                            @SuppressWarnings("deprecation")
+                            UUID playerUuid = RegisterPage.this.playerRef.getUuid();
+                            Boolean isAuthenticated = AuthService.GetInstance().GetPlayer(playerUuid);
+                            System.out.println("[HyuAuth] [RegisterPage] Timeout check - UUID: " + playerUuid + ", isAuthenticated: " + isAuthenticated);
+                            if (isAuthenticated == null || !isAuthenticated) {
+                                System.out.println("[HyuAuth] [RegisterPage] Kicking player due to timeout");
+                                RegisterPage.this.playerRef.getPacketHandler().disconnect("Время на вход истекло! Пожалуйста, переподключитесь.");
+                            } else {
+                                System.out.println("[HyuAuth] [RegisterPage] Player is authenticated, not kicking");
+                            }
+                        }
+                    } catch (IllegalStateException e) {
+                        System.out.println("[HyuAuth] [RegisterPage] Ref is invalid during timeout check: " + e.getMessage());
+                    } catch (Exception e) {
+                        System.out.println("[HyuAuth] [RegisterPage] Error in timeout check: " + e.getMessage());
                     }
                 });
             }
