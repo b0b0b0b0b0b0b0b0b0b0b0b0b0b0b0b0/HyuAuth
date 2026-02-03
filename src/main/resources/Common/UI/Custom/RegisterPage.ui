@@ -1,0 +1,81 @@
+$C = "Common.ui";
+
+$C.@PageOverlay {
+  LayoutMode: Middle;
+
+  $C.@DecoratedContainer {
+    Anchor: (Width: 500);
+
+    #Title {
+      $C.@Title {
+        @Text = "Регистрация";
+      }
+    }
+
+    #Content {
+      Padding: (Vertical: 32, Horizontal: 45);
+
+      Label {
+        Text: "Введи свой пароль";
+        Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+      }
+
+      Group #PasswordGroup {
+        LayoutMode: Top;
+        Anchor: (Top: 10);
+
+        Label {
+          Text: "Пароль";
+          Style: (RenderBold: true, TextColor: #94a7bb);
+        }
+
+        $C.@TextField #PasswordField {
+          Anchor: (Top: 4, Height: 44);
+          PlaceholderText: "Введи свой пароль";
+          PasswordChar: "*";
+        }
+      }
+
+      Group #ConfirmPasswordGroup {
+        LayoutMode: Top;
+        Anchor: (Top: 10);
+
+        Label {
+          Text: "Подтверди свой пароль";
+          Style: (RenderBold: true, TextColor: #94a7bb);
+        }
+
+        $C.@TextField #ConfirmPasswordField {
+          Anchor: (Top: 4, Height: 44);
+          PlaceholderText: "Подтверди свой пароль";
+          PasswordChar: "*";
+        }
+      }
+
+
+      Label #Error {
+        Style: (RenderBold: true, TextColor: #bb3333);
+        Visible: false;
+      }
+
+      Group {
+        LayoutMode: Center;
+        Anchor: (Top: 16);
+
+        $C.@TextButton #SubmitButton {
+          @Anchor = (Right: 4);
+          Text: "Подтвердить";
+          FlexWeight: 1;
+        }
+
+        $C.@SecondaryTextButton #CancelButton {
+          @Anchor = (Left: 4);
+          Text: "Отмена";
+          FlexWeight: 1;
+        }
+      }
+    }
+  }
+}
+
+$C.@BackButton {}

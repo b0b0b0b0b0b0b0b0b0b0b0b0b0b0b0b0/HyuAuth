@@ -34,38 +34,36 @@ public class AuthManager {
         return loggedInUsers.contains(uuid);
     }
 
-    public CompletableFuture<Void> register(UUID uuid, String password) {
-        return CompletableFuture.runAsync(() -> {
-            String passwordHash = PasswordHasher.hash(password);
-            databaseManager.registerUser(uuid, passwordHash);
+    public boolean register(UUID uuid, String username, String password) {
+        if (databaseManager.isUserRegistered(uuid)) {
+            return false;
+        }
+        String passwordHash = PasswordHasher.hash(password);
+        databaseManager.registerUser(uuid, username, passwordHash);
+        loggedInUsers.add(uuid);
+        joinTimes.remove(uuid);
+        joinLocations.remove(uuid);
+        return true;
+    }
+
+    public boolean login(UUID uuid, String password) {
+        if (!databaseManager.isUserRegistered(uuid)) {
+            return false;
+        }
+        
+        String storedHash = databaseManager.getPasswordHash(uuid);
+        if (storedHash == null) {
+            return false;
+        }
+        
+        if (PasswordHasher.verify(password, storedHash)) {
             loggedInUsers.add(uuid);
             joinTimes.remove(uuid);
             joinLocations.remove(uuid);
-        });
-    }
-
-    public CompletableFuture<Boolean> login(UUID uuid, String password) {
-        return isRegistered(uuid).thenCompose(registered -> {
-            if (!registered) {
-                return CompletableFuture.completedFuture(false);
-            }
-            
-            return CompletableFuture.supplyAsync(() -> {
-                String storedHash = databaseManager.getPasswordHash(uuid);
-                if (storedHash == null) {
-                    return false;
-                }
-                
-                if (PasswordHasher.verify(password, storedHash)) {
-                    loggedInUsers.add(uuid);
-                    joinTimes.remove(uuid);
-                    joinLocations.remove(uuid);
-                    return true;
-                }
-                
-                return false;
-            });
-        });
+            return true;
+        }
+        
+        return false;
     }
 
     public void logout(UUID uuid) {

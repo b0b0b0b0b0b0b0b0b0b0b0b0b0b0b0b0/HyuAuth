@@ -1,6 +1,7 @@
 package bm.b0b0b0.hyuauth.command;
 
 import bm.b0b0b0.hyuauth.manager.AuthManager;
+import bm.b0b0b0.hyuauth.services.AuthService;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -47,23 +48,22 @@ public class AuthCommands {
             
             String password = args[1];
             
-            return authManager.isRegistered(uuid).thenCompose(registered -> {
+            return authManager.isRegistered(uuid).thenAccept(registered -> {
                 if (!registered) {
                     sender.sendMessage(Message.translation("hyuauth.commands.login.not_registered").color("#FF0000"));
-                    return CompletableFuture.completedFuture(null);
+                    return;
                 }
                 
-                return authManager.login(uuid, password).thenAccept(success -> {
-                    if (success) {
-                        String playerName = sender instanceof PlayerRef ? ((PlayerRef) sender).getUsername() : uuid.toString();
-                        System.out.println("[HyuAuth] Player logged in: " + playerName + " (" + uuid + ")");
-                        sender.sendMessage(Message.translation("hyuauth.commands.login.success").color("#00FF00"));
-                    } else {
-                        String playerName = sender instanceof PlayerRef ? ((PlayerRef) sender).getUsername() : uuid.toString();
-                        System.out.println("[HyuAuth] Login failed for: " + playerName + " (" + uuid + ")");
-                        sender.sendMessage(Message.translation("hyuauth.commands.login.failed").color("#FF0000"));
-                    }
-                });
+                boolean success = authManager.login(uuid, password);
+                if (success) {
+                    String playerName = sender instanceof PlayerRef ? ((PlayerRef) sender).getUsername() : uuid.toString();
+                    System.out.println("[HyuAuth] Player logged in: " + playerName + " (" + uuid + ")");
+                    sender.sendMessage(Message.translation("hyuauth.commands.login.success").color("#00FF00"));
+                } else {
+                    String playerName = sender instanceof PlayerRef ? ((PlayerRef) sender).getUsername() : uuid.toString();
+                    System.out.println("[HyuAuth] Login failed for: " + playerName + " (" + uuid + ")");
+                    sender.sendMessage(Message.translation("hyuauth.commands.login.failed").color("#FF0000"));
+                }
             });
         }
     }
@@ -113,18 +113,21 @@ public class AuthCommands {
             }
             
             String password = args[1];
+            String username = sender instanceof PlayerRef ? ((PlayerRef) sender).getUsername() : uuid.toString();
             
-            return authManager.isRegistered(uuid).thenCompose(registered -> {
+            return authManager.isRegistered(uuid).thenAccept(registered -> {
                 if (registered) {
                     sender.sendMessage(Message.translation("hyuauth.commands.register.already_registered").color("#FF0000"));
-                    return CompletableFuture.completedFuture(null);
+                    return;
                 }
                 
-                return authManager.register(uuid, password).thenRun(() -> {
-                    String playerName = sender instanceof PlayerRef ? ((PlayerRef) sender).getUsername() : uuid.toString();
-                    System.out.println("[HyuAuth] Player registered: " + playerName + " (" + uuid + ")");
+                boolean success = authManager.register(uuid, username, password);
+                if (success) {
+                    System.out.println("[HyuAuth] Player registered: " + username + " (" + uuid + ")");
                     sender.sendMessage(Message.translation("hyuauth.commands.register.success").color("#00FF00"));
-                });
+                } else {
+                    sender.sendMessage(Message.translation("hyuauth.commands.register.failed").color("#FF0000"));
+                }
             });
         }
     }
@@ -206,6 +209,9 @@ public class AuthCommands {
             }
             
             return authManager.resetAccount(targetUuid).thenRun(() -> {
+                if (AuthService.GetInstance() != null) {
+                    AuthService.GetInstance().ResetPlayer(targetUuid);
+                }
                 String adminName = sender instanceof PlayerRef ? ((PlayerRef) sender).getUsername() : "Console";
                 System.out.println("[HyuAuth] Account reset by " + adminName + ": " + playerName + " (" + targetUuid + ")");
                 String successMsg = Message.translation("hyuauth.commands.authreset.success").getAnsiMessage();

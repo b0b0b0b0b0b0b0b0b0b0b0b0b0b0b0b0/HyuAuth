@@ -2,28 +2,17 @@ package bm.b0b0b0.hyuauth;
 
 import bm.b0b0b0.hyuauth.command.AuthCommands;
 import bm.b0b0b0.hyuauth.config.ConfigManager;
-import bm.b0b0b0.hyuauth.listener.AuthListener;
-import bm.b0b0b0.hyuauth.listener.PlayerInteractionListener;
+import bm.b0b0b0.hyuauth.events.PlayerAuthEvents;
 import bm.b0b0b0.hyuauth.manager.AuthManager;
-import bm.b0b0b0.hyuauth.system.PlayerBlockBreakSystem;
-import bm.b0b0b0.hyuauth.system.PlayerBlockPlaceSystem;
-import com.hypixel.hytale.server.core.event.events.ecs.UseBlockEvent;
-import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
-import com.hypixel.hytale.server.core.event.events.player.DrainPlayerFromWorldEvent;
-import com.hypixel.hytale.server.core.event.events.player.PlayerChatEvent;
-import com.hypixel.hytale.server.core.event.events.player.PlayerInteractEvent;
+import bm.b0b0b0.hyuauth.services.AuthService;
+import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class HyuAuthPlugin extends JavaPlugin {
     private AuthManager authManager;
-    private AuthListener authListener;
-    private PlayerInteractionListener playerInteractionListener;
     private ConfigManager configManager;
-    private ScheduledExecutorService scheduler;
+    private PlayerAuthEvents playerAuthEvents;
 
     public HyuAuthPlugin(JavaPluginInit init) {
         super(init);
@@ -39,17 +28,17 @@ public class HyuAuthPlugin extends JavaPlugin {
         configManager = new ConfigManager(getDataDirectory());
         getLogger().atInfo().log("[HyuAuth] Configuration loaded successfully");
         
+        getLogger().atInfo().log("[HyuAuth] Initializing AuthService...");
+        new AuthService().Initialize(getDataDirectory(), configManager.getDatabaseFileName());
+        getLogger().atInfo().log("[HyuAuth] AuthService initialized");
+        
         getLogger().atInfo().log("[HyuAuth] Initializing database manager...");
         authManager = new AuthManager(getDataDirectory(), configManager);
         getLogger().atInfo().log("[HyuAuth] Database manager initialized");
         
-        getLogger().atInfo().log("[HyuAuth] Initializing auth listener...");
-        authListener = new AuthListener(authManager);
-        getLogger().atInfo().log("[HyuAuth] Auth listener initialized");
-        
-        getLogger().atInfo().log("[HyuAuth] Initializing player interaction listener...");
-        playerInteractionListener = new PlayerInteractionListener(authManager);
-        getLogger().atInfo().log("[HyuAuth] Player interaction listener initialized");
+        getLogger().atInfo().log("[HyuAuth] Initializing player auth events...");
+        playerAuthEvents = new PlayerAuthEvents();
+        getLogger().atInfo().log("[HyuAuth] Player auth events initialized");
         
         getLogger().atInfo().log("[HyuAuth] Registering commands...");
         getCommandRegistry().registerCommand(new AuthCommands.LoginCommand(authManager));
@@ -62,12 +51,8 @@ public class HyuAuthPlugin extends JavaPlugin {
         getLogger().atInfo().log("[HyuAuth] Commands registered: /login, /l, /register, /reg, /logout, /authreset, /authconfig");
         
         getLogger().atInfo().log("[HyuAuth] Registering event listeners...");
-        getEventRegistry().registerGlobal(AddPlayerToWorldEvent.class, authListener::onPlayerJoin);
-        getEventRegistry().registerGlobal(DrainPlayerFromWorldEvent.class, authListener::onPlayerQuit);
-        getEventRegistry().registerGlobal(PlayerChatEvent.class, playerInteractionListener::onPlayerChat);
-        getEventRegistry().registerGlobal(PlayerInteractEvent.class, playerInteractionListener::onPlayerInteract);
-        getEventRegistry().registerGlobal(UseBlockEvent.Pre.class, playerInteractionListener::onPlayerUseBlock);
-        getLogger().atInfo().log("[HyuAuth] Event listeners registered: AddPlayerToWorldEvent, DrainPlayerFromWorldEvent, PlayerChatEvent, PlayerInteractEvent, UseBlockEvent.Pre");
+        getEventRegistry().registerGlobal(PlayerReadyEvent.class, playerAuthEvents::onPlayerReady);
+        getLogger().atInfo().log("[HyuAuth] Event listeners registered: PlayerReadyEvent");
         
         getLogger().atInfo().log("[HyuAuth] Setup completed successfully!");
         getLogger().atInfo().log("================================================");
@@ -79,20 +64,9 @@ public class HyuAuthPlugin extends JavaPlugin {
         getLogger().atInfo().log("[HyuAuth] Starting authentication plugin...");
         getLogger().atInfo().log("================================================");
         
-        getLogger().atInfo().log("[HyuAuth] Registering ECS systems...");
-        getEntityStoreRegistry().registerSystem(new PlayerBlockPlaceSystem(authManager));
-        getEntityStoreRegistry().registerSystem(new PlayerBlockBreakSystem(authManager));
-        getLogger().atInfo().log("[HyuAuth] ECS systems registered: PlayerBlockPlaceSystem, PlayerBlockBreakSystem");
-        
-        getLogger().atInfo().log("[HyuAuth] Starting scheduled authentication loop...");
-        scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(authListener::checkAuthLoop, 100L, 500L, TimeUnit.MILLISECONDS);
-        getLogger().atInfo().log("[HyuAuth] Authentication loop started (interval: 500ms)");
-        
         getLogger().atInfo().log("================================================");
         getLogger().atInfo().log("[HyuAuth] Plugin started successfully!");
-        getLogger().atInfo().log("[HyuAuth] Players will be blocked until authentication");
-        getLogger().atInfo().log("[HyuAuth] Use /login <password> or /register <password>");
+        getLogger().atInfo().log("[HyuAuth] Players will see authentication UI window");
         getLogger().atInfo().log("================================================");
     }
 
@@ -102,10 +76,10 @@ public class HyuAuthPlugin extends JavaPlugin {
         getLogger().atInfo().log("[HyuAuth] Shutting down authentication plugin...");
         getLogger().atInfo().log("================================================");
         
-        if (scheduler != null) {
-            getLogger().atInfo().log("[HyuAuth] Stopping authentication loop scheduler...");
-            scheduler.shutdown();
-            getLogger().atInfo().log("[HyuAuth] Scheduler stopped");
+        if (AuthService.GetInstance() != null) {
+            getLogger().atInfo().log("[HyuAuth] Shutting down AuthService...");
+            AuthService.GetInstance().shutdown();
+            getLogger().atInfo().log("[HyuAuth] AuthService shut down");
         }
         
         if (authManager != null) {

@@ -25,18 +25,24 @@ public class PlayerBlockPlaceSystem extends com.hypixel.hytale.component.system.
 
     @Override
     public void handle(int index, ArchetypeChunk<EntityStore> archetypeChunk, Store<EntityStore> store, CommandBuffer<EntityStore> commandBuffer, PlaceBlockEvent event) {
+        System.out.println("[HyuAuth] [EVENT-LOG] PlayerBlockPlaceSystem.handle() CALLED | index=" + index + " | event=" + event.getClass().getName());
         try {
             UUIDComponent component = archetypeChunk.getComponent(index, UUIDComponent.getComponentType());
+            System.out.println("[HyuAuth] [EVENT-LOG] PlayerBlockPlaceSystem | UUIDComponent=" + (component != null ? "found" : "null"));
             if (component != null) {
+                @SuppressWarnings("deprecation")
                 UUID playerUuid = component.getUuid();
+                System.out.println("[HyuAuth] [EVENT-LOG] PlaceBlockEvent (PLACE) | Player: " + playerUuid + " | Action: BLOCK_PLACE");
                 boolean isLoggedIn = authManager.isLoggedIn(playerUuid);
                 if (!isLoggedIn) {
-                    System.out.println("[HyuAuth] BlockPlaceSystem: Blocking block place for " + playerUuid);
+                    System.out.println("[HyuAuth] [EVENT-LOG] PlaceBlockEvent (PLACE) | BLOCKED for " + playerUuid);
                     event.setCancelled(true);
                 }
+            } else {
+                System.out.println("[HyuAuth] [EVENT-LOG] PlaceBlockEvent (PLACE) | Player: UNKNOWN | No UUIDComponent at index " + index);
             }
         } catch (Exception e) {
-            System.out.println("[HyuAuth] BlockPlaceSystem error: " + e.getMessage());
+            System.out.println("[HyuAuth] [EVENT-LOG] PlaceBlockEvent (PLACE) | ERROR: " + e.getMessage());
             e.printStackTrace();
         }
     }

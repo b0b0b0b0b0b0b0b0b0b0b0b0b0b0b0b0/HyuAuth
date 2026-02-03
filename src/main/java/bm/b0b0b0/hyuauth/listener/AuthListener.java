@@ -18,6 +18,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public class AuthListener {
     private final AuthManager authManager;
@@ -95,12 +97,24 @@ public class AuthListener {
 
                 while (playerIterator.hasNext()) {
                     Player player = playerIterator.next();
+                    @SuppressWarnings("deprecation")
                     UUID uuid = player.getUuid();
                     if (!authManager.isLoggedIn(uuid)) {
                         authManager.markJoin(uuid);
 
                         try {
-                            Vector3d currentPos = player.getTransformComponent().getPosition();
+                            Vector3d currentPos = CompletableFuture.supplyAsync(() -> {
+                                try {
+                                    return player.getTransformComponent().getPosition();
+                                } catch (Exception e) {
+                                    return null;
+                                }
+                            }, (Executor) world).get();
+                            
+                            if (currentPos == null) {
+                                continue;
+                            }
+                            
                             Vector3d savedPos = authManager.getJoinLocation(uuid);
                             if (savedPos == null) {
                                 authManager.markJoinLocation(uuid, currentPos.clone());
@@ -113,7 +127,8 @@ public class AuthListener {
                                     System.out.println("[HyuAuth] Teleported " + player.getDisplayName() + " back (distance: " + String.format("%.2f", distance) + ")");
                                 }
                             }
-                        } catch (Exception ignored) {
+                        } catch (Exception e) {
+                            System.out.println("[HyuAuth] Error getting player position: " + e.getMessage());
                         }
 
                         boolean shouldKick = authManager.shouldKick(uuid);

@@ -45,6 +45,7 @@ public class PlayerMovementSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
         
+        @SuppressWarnings("deprecation")
         UUID uuid = uuidComponent.getUuid();
         if (!authManager.isLoggedIn(uuid)) {
             TransformComponent transform = store.getComponent(entityRef, TRANSFORM_COMPONENT_TYPE);

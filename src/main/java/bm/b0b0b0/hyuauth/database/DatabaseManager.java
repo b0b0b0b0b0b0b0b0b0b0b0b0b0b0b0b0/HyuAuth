@@ -44,6 +44,7 @@ public class DatabaseManager {
         String createTableSQL = """
             CREATE TABLE IF NOT EXISTS users (
                 uuid TEXT PRIMARY KEY,
+                username TEXT NOT NULL,
                 password_hash TEXT NOT NULL,
                 created_at INTEGER NOT NULL
             )
@@ -51,81 +52,176 @@ public class DatabaseManager {
         
         try (Statement stmt = connection.createStatement()) {
             stmt.execute(createTableSQL);
+            try {
+                stmt.execute("ALTER TABLE users ADD COLUMN username TEXT");
+            } catch (SQLException e) {
+            }
             System.out.println("[HyuAuth] Table 'users' ready");
         }
     }
 
     public Connection getConnection() {
         try {
-            if (connection == null || connection.isClosed()) {
+            if (connection == null || connection.isClosed() || !connection.isValid(2)) {
+                if (connection != null && !connection.isClosed()) {
+                    try {
+                        connection.close();
+                    } catch (SQLException ignored) {
+                    }
+                }
                 connection = DriverManager.getConnection(databaseUrl);
+                System.out.println("[HyuAuth] Database connection reestablished");
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to get database connection", e);
+            System.out.println("[HyuAuth] ERROR: Failed to get database connection: " + e.getMessage());
+            try {
+                if (connection != null && !connection.isClosed()) {
+                    connection.close();
+                }
+            } catch (SQLException ignored) {
+            }
+            try {
+                connection = DriverManager.getConnection(databaseUrl);
+                System.out.println("[HyuAuth] Database connection recovered after error");
+            } catch (SQLException e2) {
+                System.out.println("[HyuAuth] CRITICAL: Failed to recover database connection: " + e2.getMessage());
+                throw new RuntimeException("Failed to get database connection", e2);
+            }
         }
         return connection;
     }
 
     public boolean isUserRegistered(UUID uuid) {
         String sql = "SELECT COUNT(*) FROM users WHERE uuid = ?";
-        try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
-            pstmt.setString(1, uuid.toString());
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
+        int retries = 3;
+        while (retries > 0) {
+            try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+                pstmt.setString(1, uuid.toString());
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1) > 0;
+                    }
+                }
+                return false;
+            } catch (SQLException e) {
+                retries--;
+                System.out.println("[HyuAuth] ERROR: Failed to check user registration (retries left: " + retries + "): " + e.getMessage());
+                if (retries > 0) {
+                    try {
+                        Thread.sleep(100);
+                        getConnection();
+                    } catch (InterruptedException | RuntimeException ignored) {
+                    }
+                } else {
+                    throw new RuntimeException("Failed to check user registration after retries", e);
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to check user registration", e);
         }
         return false;
     }
 
     public String getPasswordHash(UUID uuid) {
         String sql = "SELECT password_hash FROM users WHERE uuid = ?";
-        try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
-            pstmt.setString(1, uuid.toString());
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("password_hash");
+        int retries = 3;
+        while (retries > 0) {
+            try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+                pstmt.setString(1, uuid.toString());
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getString("password_hash");
+                    }
+                }
+                return null;
+            } catch (SQLException e) {
+                retries--;
+                System.out.println("[HyuAuth] ERROR: Failed to get password hash (retries left: " + retries + "): " + e.getMessage());
+                if (retries > 0) {
+                    try {
+                        Thread.sleep(100);
+                        getConnection();
+                    } catch (InterruptedException | RuntimeException ignored) {
+                    }
+                } else {
+                    throw new RuntimeException("Failed to get password hash after retries", e);
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to get password hash", e);
         }
         return null;
     }
 
-    public void registerUser(UUID uuid, String passwordHash) {
-        String sql = "INSERT INTO users (uuid, password_hash, created_at) VALUES (?, ?, ?)";
-        try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
-            pstmt.setString(1, uuid.toString());
-            pstmt.setString(2, passwordHash);
-            pstmt.setLong(3, System.currentTimeMillis());
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to register user", e);
+    public void registerUser(UUID uuid, String username, String passwordHash) {
+        String sql = "INSERT INTO users (uuid, username, password_hash, created_at) VALUES (?, ?, ?, ?)";
+        int retries = 3;
+        while (retries > 0) {
+            try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+                pstmt.setString(1, uuid.toString());
+                pstmt.setString(2, username);
+                pstmt.setString(3, passwordHash);
+                pstmt.setLong(4, System.currentTimeMillis());
+                pstmt.executeUpdate();
+                return;
+            } catch (SQLException e) {
+                retries--;
+                System.out.println("[HyuAuth] ERROR: Failed to register user (retries left: " + retries + "): " + e.getMessage());
+                if (retries > 0) {
+                    try {
+                        Thread.sleep(100);
+                        getConnection();
+                    } catch (InterruptedException | RuntimeException ignored) {
+                    }
+                } else {
+                    throw new RuntimeException("Failed to register user after retries", e);
+                }
+            }
         }
     }
 
     public void updatePassword(UUID uuid, String passwordHash) {
         String sql = "UPDATE users SET password_hash = ? WHERE uuid = ?";
-        try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
-            pstmt.setString(1, passwordHash);
-            pstmt.setString(2, uuid.toString());
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to update password", e);
+        int retries = 3;
+        while (retries > 0) {
+            try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+                pstmt.setString(1, passwordHash);
+                pstmt.setString(2, uuid.toString());
+                pstmt.executeUpdate();
+                return;
+            } catch (SQLException e) {
+                retries--;
+                System.out.println("[HyuAuth] ERROR: Failed to update password (retries left: " + retries + "): " + e.getMessage());
+                if (retries > 0) {
+                    try {
+                        Thread.sleep(100);
+                        getConnection();
+                    } catch (InterruptedException | RuntimeException ignored) {
+                    }
+                } else {
+                    throw new RuntimeException("Failed to update password after retries", e);
+                }
+            }
         }
     }
 
     public void deleteUser(UUID uuid) {
         String sql = "DELETE FROM users WHERE uuid = ?";
-        try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
-            pstmt.setString(1, uuid.toString());
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to delete user", e);
+        int retries = 3;
+        while (retries > 0) {
+            try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+                pstmt.setString(1, uuid.toString());
+                pstmt.executeUpdate();
+                return;
+            } catch (SQLException e) {
+                retries--;
+                System.out.println("[HyuAuth] ERROR: Failed to delete user (retries left: " + retries + "): " + e.getMessage());
+                if (retries > 0) {
+                    try {
+                        Thread.sleep(100);
+                        getConnection();
+                    } catch (InterruptedException | RuntimeException ignored) {
+                    }
+                } else {
+                    throw new RuntimeException("Failed to delete user after retries", e);
+                }
+            }
         }
     }
 

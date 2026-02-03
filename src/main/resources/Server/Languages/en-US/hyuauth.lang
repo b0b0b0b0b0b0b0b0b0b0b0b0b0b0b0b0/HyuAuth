@@ -23,7 +23,18 @@ commands.authconfig.current=Current timeout: {0}s
 commands.authconfig.success=Login timeout configured to {0} seconds.
 commands.authconfig.invalid_number=Invalid number.
 
-# === messages ===
-
-messages.blocked=BLOCKED! Please use /login or /register
+messages.blocked=Blocked! Please authenticate via UI window
 messages.timeout_kick=Login time expired! Please reconnect.
+messages.registration_success=Registration successful!
+messages.login_success=Authentication successful!
+messages.need_register=You need register to play in this world.
+messages.invalid_password=Invalid password
+messages.password_empty=Please, insert a password
+messages.password_too_short=Your password must have 3 characters
+messages.password_confirm_empty=You need to confirm your password
+messages.password_mismatch=Both password and confirmation needs to be the same
+messages.registration_failed=Registration failed
+messages.authentication_failed=Authentication failed
+messages.error_1002=Error 1002
+messages.username_already_registered=Username already registered
+messages.unknown_error=Unknown Error

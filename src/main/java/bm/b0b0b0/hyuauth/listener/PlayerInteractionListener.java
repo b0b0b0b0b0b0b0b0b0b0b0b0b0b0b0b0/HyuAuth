@@ -23,6 +23,7 @@ public class PlayerInteractionListener {
 
     public void onPlayerChat(PlayerChatEvent event) {
         try {
+            System.out.println("[HyuAuth] PlayerChatEvent: " + event.getClass().getName());
             PlayerRef sender = null;
             try {
                 sender = event.getSender();
@@ -46,6 +47,8 @@ public class PlayerInteractionListener {
             if (uuid == null) {
                 return;
             }
+            
+            System.out.println("[HyuAuth] PlayerChatEvent: Player " + uuid + " isLoggedIn=" + authManager.isLoggedIn(uuid));
             
             if (!authManager.isLoggedIn(uuid)) {
                 String message = null;
@@ -86,10 +89,13 @@ public class PlayerInteractionListener {
 
     public void onPlayerInteract(PlayerInteractEvent event) {
         try {
+            System.out.println("[HyuAuth] PlayerInteractEvent: " + event.getClass().getName());
             if (event instanceof PlayerEvent) {
                 com.hypixel.hytale.server.core.entity.entities.Player player = ((PlayerEvent<?>)event).getPlayer();
                 UUID uuid = getUuidFromPlayer(player);
+                System.out.println("[HyuAuth] PlayerInteractEvent: Player " + uuid + " isLoggedIn=" + (uuid != null ? authManager.isLoggedIn(uuid) : "null"));
                 if (uuid != null && !authManager.isLoggedIn(uuid)) {
+                    System.out.println("[HyuAuth] PlayerInteractEvent: Blocking interaction for " + uuid);
                     if (event instanceof com.hypixel.hytale.event.ICancellable) {
                         ((com.hypixel.hytale.event.ICancellable) event).setCancelled(true);
                     } else {
@@ -101,12 +107,15 @@ public class PlayerInteractionListener {
                     }
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            System.out.println("[HyuAuth] PlayerInteractEvent error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     public void onPlayerUseBlock(UseBlockEvent.Pre event) {
         try {
+            System.out.println("[HyuAuth] UseBlockEvent.Pre: " + event.getClass().getName());
             com.hypixel.hytale.server.core.entity.InteractionContext context = event.getContext();
             if (context != null) {
                 Ref<EntityStore> entityRef = context.getEntity();
@@ -115,10 +124,11 @@ public class PlayerInteractionListener {
                     PlayerRef playerRef = commandBuffer.getComponent(entityRef, PlayerRef.getComponentType());
                     if (playerRef != null) {
                         UUID uuid = getUuidFromPlayerRef(playerRef);
+                        System.out.println("[HyuAuth] UseBlockEvent.Pre: Player " + uuid + " isLoggedIn=" + (uuid != null ? authManager.isLoggedIn(uuid) : "null"));
                         if (uuid != null) {
                             boolean isLoggedIn = authManager.isLoggedIn(uuid);
                             if (!isLoggedIn) {
-                                System.out.println("[HyuAuth] UseBlockEvent: Blocking block use for " + uuid);
+                                System.out.println("[HyuAuth] UseBlockEvent.Pre: Blocking block use for " + uuid);
                                 if (event instanceof com.hypixel.hytale.component.system.ICancellableEcsEvent) {
                                     ((com.hypixel.hytale.component.system.ICancellableEcsEvent) event).setCancelled(true);
                                 } else {
@@ -137,7 +147,9 @@ public class PlayerInteractionListener {
                     }
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            System.out.println("[HyuAuth] UseBlockEvent.Pre error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

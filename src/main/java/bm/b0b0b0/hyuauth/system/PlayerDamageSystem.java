@@ -35,6 +35,7 @@ public class PlayerDamageSystem extends DamageEventSystem {
             return;
         }
         
+        @SuppressWarnings("deprecation")
         UUID playerUuid = uuidComponent.getUuid();
         if (!authManager.isLoggedIn(playerUuid)) {
             damage.setAmount(0.0f);

@@ -23,7 +23,18 @@ commands.authconfig.current=Текущий таймаут: {0}с
 commands.authconfig.success=Таймаут входа установлен на {0} секунд.
 commands.authconfig.invalid_number=Неверное число.
 
-# === messages ===
-
-messages.blocked=ЗАБЛОКИРОВАНО! Пожалуйста, используйте /login или /register
+messages.blocked=Заблокировано! Авторизуйтесь через окно
 messages.timeout_kick=Время на вход истекло! Пожалуйста, переподключитесь.
+messages.registration_success=Регистрация успешна!
+messages.login_success=Авторизация успешна!
+messages.need_register=Вам нужно зарегистрироваться для игры на этом сервере.
+messages.invalid_password=Неверный пароль
+messages.password_empty=Пожалуйста, введите пароль
+messages.password_too_short=Пароль должен содержать минимум 3 символа
+messages.password_confirm_empty=Необходимо подтвердить пароль
+messages.password_mismatch=Пароль и подтверждение должны совпадать
+messages.registration_failed=Ошибка регистрации
+messages.authentication_failed=Ошибка авторизации
+messages.error_1002=Ошибка 1002
+messages.username_already_registered=Имя пользователя уже зарегистрировано
+messages.unknown_error=Неизвестная ошибка
