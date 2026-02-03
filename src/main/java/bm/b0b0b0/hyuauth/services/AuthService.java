@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class AuthService {
     private static AuthService _instance;
-    private final HashMap<UUID, Boolean> _authInstances = new HashMap<>();
+    public final HashMap<UUID, Boolean> _authInstances = new HashMap<>();
     private DatabaseManager databaseManager;
 
     public AuthService Initialize(Path dataDirectory, String dbFileName) {

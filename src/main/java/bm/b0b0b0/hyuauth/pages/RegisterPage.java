@@ -2,6 +2,7 @@ package bm.b0b0b0.hyuauth.pages;
 
 import bm.b0b0b0.hyuauth.data.AuthResult;
 import bm.b0b0b0.hyuauth.services.AuthService;
+import bm.b0b0b0.hyuauth.session.SessionManager;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -27,9 +28,11 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
     private String inputPassword = null;
     private String inputConfirmPassword = null;
     private Timer timeoutTimer = null;
+    private final SessionManager sessionManager;
 
-    public RegisterPage(@Nonnull PlayerRef playerRef) {
+    public RegisterPage(@Nonnull PlayerRef playerRef, SessionManager sessionManager) {
         super(playerRef, CustomPageLifetime.CantClose, RegisterEventData.CODEC);
+        this.sessionManager = sessionManager;
     }
 
     @Override
@@ -84,6 +87,10 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
             this.displayError(getLocalizedText("hyuauth.messages.password_too_short"));
             return false;
         }
+        if (this.inputPassword.length() > 64) {
+            this.displayError(getLocalizedText("hyuauth.messages.password_too_long"));
+            return false;
+        }
         if (this.inputConfirmPassword == null || this.inputConfirmPassword.isEmpty()) {
             this.displayError(getLocalizedText("hyuauth.messages.password_confirm_empty"));
             return false;
@@ -103,6 +110,15 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
             this.displayError(errorMessage);
         } else {
             System.out.println("[HyuAuth] [RegisterPage] Registration successful, closing page");
+            @SuppressWarnings("deprecation")
+            UUID playerUuid = playerRef.getUuid();
+            String username = playerRef.getUsername();
+            String ipAddress = getPlayerIP(playerRef);
+            
+            if (this.sessionManager != null) {
+                this.sessionManager.createSession(ipAddress, username, playerUuid);
+            }
+            
             com.hypixel.hytale.server.core.Message successMessage = com.hypixel.hytale.server.core.Message.raw("Регистрация успешна!")
                     .color("#00FF00")
                     .bold(true);
@@ -111,6 +127,39 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
             this.close();
         }
     }
+
+    private String getPlayerIP(@Nonnull PlayerRef playerRef) {
+        try {
+            com.hypixel.hytale.server.core.io.PacketHandler packetHandler = playerRef.getPacketHandler();
+            if (packetHandler != null) {
+                try {
+                    java.lang.reflect.Method getConnectionMethod = packetHandler.getClass().getMethod("getConnection");
+                    getConnectionMethod.setAccessible(true);
+                    Object connection = getConnectionMethod.invoke(packetHandler);
+                    if (connection != null) {
+                        try {
+                            java.lang.reflect.Method getRemoteAddressMethod = connection.getClass().getMethod("getRemoteAddress");
+                            getRemoteAddressMethod.setAccessible(true);
+                            Object address = getRemoteAddressMethod.invoke(connection);
+                            if (address != null) {
+                                String addressStr = address.toString();
+                                if (addressStr.contains("/")) {
+                                    return addressStr.split("/")[1].split(":")[0];
+                                }
+                                return addressStr.split(":")[0];
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("[HyuAuth] [RegisterPage] Error getting IP: " + e.getMessage());
+        }
+        return "unknown";
+    }
+
 
     private void startTimeoutTimer(final @Nonnull Ref<EntityStore> ref, final @Nonnull Store<EntityStore> store) {
         this.cancelTimeout();
@@ -162,6 +211,7 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
         if (key.equals("hyuauth.messages.invalid_password")) return "Неверный пароль";
         if (key.equals("hyuauth.messages.password_empty")) return "Пожалуйста, введите пароль";
         if (key.equals("hyuauth.messages.password_too_short")) return "Пароль должен содержать минимум 3 символа";
+        if (key.equals("hyuauth.messages.password_too_long")) return "Пароль не должен превышать 64 символа";
         if (key.equals("hyuauth.messages.password_confirm_empty")) return "Необходимо подтвердить пароль";
         if (key.equals("hyuauth.messages.password_mismatch")) return "Пароль и подтверждение должны совпадать";
         if (key.equals("hyuauth.messages.registration_failed")) return "Ошибка регистрации";

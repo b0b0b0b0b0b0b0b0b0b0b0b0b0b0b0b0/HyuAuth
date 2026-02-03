@@ -2,6 +2,7 @@ package bm.b0b0b0.hyuauth.pages;
 
 import bm.b0b0b0.hyuauth.data.AuthResult;
 import bm.b0b0b0.hyuauth.services.AuthService;
+import bm.b0b0b0.hyuauth.session.SessionManager;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -26,9 +27,11 @@ import javax.annotation.Nonnull;
 public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData> {
     private String inputPassword = null;
     private Timer timeoutTimer = null;
+    private final SessionManager sessionManager;
 
-    public LoginPage(@Nonnull PlayerRef playerRef) {
+    public LoginPage(@Nonnull PlayerRef playerRef, SessionManager sessionManager) {
         super(playerRef, CustomPageLifetime.CantClose, LoginEventData.CODEC);
+        this.sessionManager = sessionManager;
     }
 
     @Override
@@ -60,12 +63,16 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
     }
 
     private void handlePasswordAuthentication(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull Player playerComponent) {
-        if (this.inputPassword != null && !this.inputPassword.isEmpty()) {
-            AuthResult result = AuthService.GetInstance().AuthenticatePlayer(this.playerRef.getUuid(), this.inputPassword);
-            this.handleAuthenticationResult(ref, store, this.playerRef, playerComponent, result);
-        } else {
-            this.displayError(getLocalizedText("hyuauth.messages.invalid_password"));
+        if (this.inputPassword == null || this.inputPassword.isEmpty()) {
+            this.displayError(getLocalizedText("hyuauth.messages.password_empty"));
+            return;
         }
+        if (this.inputPassword.length() > 64) {
+            this.displayError(getLocalizedText("hyuauth.messages.password_too_long"));
+            return;
+        }
+        AuthResult result = AuthService.GetInstance().AuthenticatePlayer(this.playerRef.getUuid(), this.inputPassword);
+        this.handleAuthenticationResult(ref, store, this.playerRef, playerComponent, result);
     }
 
     private void handleAuthenticationResult(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull PlayerRef playerRef, @Nonnull Player playerComponent, @Nonnull AuthResult result) {
@@ -73,6 +80,15 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
             String errorMessage = getLocalizedErrorMessage(result.Message);
             this.displayError(errorMessage);
         } else {
+            @SuppressWarnings("deprecation")
+            UUID playerUuid = playerRef.getUuid();
+            String username = playerRef.getUsername();
+            String ipAddress = getPlayerIP(playerRef);
+            
+            if (this.sessionManager != null) {
+                this.sessionManager.createSession(ipAddress, username, playerUuid);
+            }
+            
             com.hypixel.hytale.server.core.Message successMessage = com.hypixel.hytale.server.core.Message.raw("Авторизация успешна!")
                     .color("#00FF00")
                     .bold(true);
@@ -81,6 +97,39 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
             this.close();
         }
     }
+
+    private String getPlayerIP(@Nonnull PlayerRef playerRef) {
+        try {
+            com.hypixel.hytale.server.core.io.PacketHandler packetHandler = playerRef.getPacketHandler();
+            if (packetHandler != null) {
+                try {
+                    java.lang.reflect.Method getConnectionMethod = packetHandler.getClass().getMethod("getConnection");
+                    getConnectionMethod.setAccessible(true);
+                    Object connection = getConnectionMethod.invoke(packetHandler);
+                    if (connection != null) {
+                        try {
+                            java.lang.reflect.Method getRemoteAddressMethod = connection.getClass().getMethod("getRemoteAddress");
+                            getRemoteAddressMethod.setAccessible(true);
+                            Object address = getRemoteAddressMethod.invoke(connection);
+                            if (address != null) {
+                                String addressStr = address.toString();
+                                if (addressStr.contains("/")) {
+                                    return addressStr.split("/")[1].split(":")[0];
+                                }
+                                return addressStr.split(":")[0];
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("[HyuAuth] [LoginPage] Error getting IP: " + e.getMessage());
+        }
+        return "unknown";
+    }
+
 
     private void startTimeoutTimer(final @Nonnull Ref<EntityStore> ref, final @Nonnull Store<EntityStore> store) {
         this.cancelTimeout();
@@ -131,6 +180,8 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
 
     private String getFallbackText(String key) {
         if (key.equals("hyuauth.messages.invalid_password")) return "Неверный пароль";
+        if (key.equals("hyuauth.messages.password_empty")) return "Пожалуйста, введите пароль";
+        if (key.equals("hyuauth.messages.password_too_long")) return "Пароль не должен превышать 64 символа";
         if (key.equals("hyuauth.messages.authentication_failed")) return "Ошибка авторизации";
         if (key.equals("hyuauth.messages.error_1002")) return "Ошибка 1002";
         if (key.equals("hyuauth.messages.unknown_error")) return "Неизвестная ошибка";

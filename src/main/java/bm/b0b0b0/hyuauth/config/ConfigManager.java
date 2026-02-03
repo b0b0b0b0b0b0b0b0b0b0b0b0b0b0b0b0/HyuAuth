@@ -58,6 +58,18 @@ public class ConfigManager {
     }
 
     @SuppressWarnings("unchecked")
+    public int getSessionTimeoutMinutes() {
+        Map<String, Object> settings = (Map<String, Object>) config.get("settings");
+        if (settings != null) {
+            Object timeoutObj = settings.get("session_timeout_minutes");
+            if (timeoutObj instanceof Integer) {
+                return (Integer) timeoutObj;
+            }
+        }
+        return 5;
+    }
+
+    @SuppressWarnings("unchecked")
     public String getLanguage() {
         Map<String, Object> settings = (Map<String, Object>) config.get("settings");
         if (settings != null) {

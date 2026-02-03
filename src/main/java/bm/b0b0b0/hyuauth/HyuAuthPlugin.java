@@ -5,6 +5,8 @@ import bm.b0b0b0.hyuauth.config.ConfigManager;
 import bm.b0b0b0.hyuauth.events.PlayerAuthEvents;
 import bm.b0b0b0.hyuauth.manager.AuthManager;
 import bm.b0b0b0.hyuauth.services.AuthService;
+import bm.b0b0b0.hyuauth.session.SessionManager;
+import com.hypixel.hytale.server.core.event.events.player.DrainPlayerFromWorldEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -13,6 +15,7 @@ public class HyuAuthPlugin extends JavaPlugin {
     private AuthManager authManager;
     private ConfigManager configManager;
     private PlayerAuthEvents playerAuthEvents;
+    private SessionManager sessionManager;
 
     public HyuAuthPlugin(JavaPluginInit init) {
         super(init);
@@ -36,8 +39,12 @@ public class HyuAuthPlugin extends JavaPlugin {
         authManager = new AuthManager(getDataDirectory(), configManager);
         getLogger().atInfo().log("[HyuAuth] Database manager initialized");
         
+        getLogger().atInfo().log("[HyuAuth] Initializing session manager...");
+        sessionManager = new SessionManager(configManager.getSessionTimeoutMinutes());
+        getLogger().atInfo().log("[HyuAuth] Session manager initialized");
+        
         getLogger().atInfo().log("[HyuAuth] Initializing player auth events...");
-        playerAuthEvents = new PlayerAuthEvents();
+        playerAuthEvents = new PlayerAuthEvents(sessionManager);
         getLogger().atInfo().log("[HyuAuth] Player auth events initialized");
         
         getLogger().atInfo().log("[HyuAuth] Registering commands...");
@@ -52,7 +59,8 @@ public class HyuAuthPlugin extends JavaPlugin {
         
         getLogger().atInfo().log("[HyuAuth] Registering event listeners...");
         getEventRegistry().registerGlobal(PlayerReadyEvent.class, playerAuthEvents::onPlayerReady);
-        getLogger().atInfo().log("[HyuAuth] Event listeners registered: PlayerReadyEvent");
+        getEventRegistry().registerGlobal(DrainPlayerFromWorldEvent.class, playerAuthEvents::onPlayerQuit);
+        getLogger().atInfo().log("[HyuAuth] Event listeners registered: PlayerReadyEvent, DrainPlayerFromWorldEvent");
         
         getLogger().atInfo().log("[HyuAuth] Setup completed successfully!");
         getLogger().atInfo().log("================================================");
@@ -64,10 +72,30 @@ public class HyuAuthPlugin extends JavaPlugin {
         getLogger().atInfo().log("[HyuAuth] Starting authentication plugin...");
         getLogger().atInfo().log("================================================");
         
+        getLogger().atInfo().log("[HyuAuth] Starting session cleanup task...");
+        startSessionCleanupTask();
+        getLogger().atInfo().log("[HyuAuth] Session cleanup task started");
+        
         getLogger().atInfo().log("================================================");
         getLogger().atInfo().log("[HyuAuth] Plugin started successfully!");
         getLogger().atInfo().log("[HyuAuth] Players will see authentication UI window");
         getLogger().atInfo().log("================================================");
+    }
+
+    private void startSessionCleanupTask() {
+        java.util.Timer timer = new java.util.Timer(true);
+        timer.schedule(new java.util.TimerTask() {
+            @Override
+            public void run() {
+                if (sessionManager != null) {
+                    sessionManager.cleanupExpiredSessions();
+                }
+            }
+        }, 60000L, 60000L);
+    }
+
+    public SessionManager getSessionManager() {
+        return sessionManager;
     }
 
     @Override
