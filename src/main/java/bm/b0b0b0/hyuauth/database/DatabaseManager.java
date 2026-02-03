@@ -149,6 +149,39 @@ public class DatabaseManager {
         return null;
     }
 
+    public UUID getUuidByUsername(String username) {
+        String sql = "SELECT uuid FROM users WHERE username = ?";
+        int retries = 3;
+        while (retries > 0) {
+            try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+                pstmt.setString(1, username);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        String uuidString = rs.getString("uuid");
+                        return UUID.fromString(uuidString);
+                    }
+                }
+                return null;
+            } catch (SQLException e) {
+                retries--;
+                System.out.println("[HyuAuth] ERROR: Failed to get UUID by username (retries left: " + retries + "): " + e.getMessage());
+                if (retries > 0) {
+                    try {
+                        Thread.sleep(100);
+                        getConnection();
+                    } catch (InterruptedException | RuntimeException ignored) {
+                    }
+                } else {
+                    throw new RuntimeException("Failed to get UUID by username after retries", e);
+                }
+            } catch (IllegalArgumentException e) {
+                System.out.println("[HyuAuth] ERROR: Invalid UUID format in database: " + e.getMessage());
+                return null;
+            }
+        }
+        return null;
+    }
+
     public void registerUser(UUID uuid, String username, String passwordHash) {
         String sql = "INSERT INTO users (uuid, username, password_hash, created_at) VALUES (?, ?, ?, ?)";
         int retries = 3;

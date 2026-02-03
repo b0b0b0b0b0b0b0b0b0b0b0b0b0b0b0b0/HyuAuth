@@ -224,8 +224,16 @@ public class AuthCommands {
             List<com.hypixel.hytale.server.core.universe.PlayerRef> players = com.hypixel.hytale.server.core.universe.Universe.get().getPlayers();
             for (com.hypixel.hytale.server.core.universe.PlayerRef playerRef : players) {
                 if (playerRef.getUsername().equalsIgnoreCase(playerName)) {
-                    return getUuidFromPlayerRef(playerRef);
+                    UUID uuid = getUuidFromPlayerRef(playerRef);
+                    if (uuid != null) {
+                        return uuid;
+                    }
                 }
+            }
+            UUID uuidFromDatabase = authManager.getDatabaseManager().getUuidByUsername(playerName);
+            if (uuidFromDatabase != null) {
+                System.out.println("[HyuAuth] Found player " + playerName + " in database: " + uuidFromDatabase);
+                return uuidFromDatabase;
             }
             return null;
         }

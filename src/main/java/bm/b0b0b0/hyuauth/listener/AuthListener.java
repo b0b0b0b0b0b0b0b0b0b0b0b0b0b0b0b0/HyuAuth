@@ -136,13 +136,13 @@ public class AuthListener {
                             System.out.println("[HyuAuth] Kicking player " + player.getDisplayName() + " (timeout)");
                             if (player.getPlayerConnection() != null) {
                                 PacketHandler connection = player.getPlayerConnection();
-                                connection.disconnect(Message.translation("hyuauth.messages.timeout_kick").getAnsiMessage());
+                                connection.disconnect("Время на вход истекло! Пожалуйста, переподключитесь.");
                                 authManager.markQuit(uuid);
                             } else {
                                 System.out.println("[HyuAuth] Warning: Cannot kick " + player.getDisplayName() + " (no connection)");
                             }
                         } else if (System.currentTimeMillis() % 2000L < 500L) {
-                            player.sendMessage(Message.translation("hyuauth.messages.blocked").color("#FF0000").bold(true));
+                            player.sendMessage(Message.raw("Заблокировано! Авторизуйтесь через окно").color("#FF0000").bold(true));
                         }
                     }
                 }

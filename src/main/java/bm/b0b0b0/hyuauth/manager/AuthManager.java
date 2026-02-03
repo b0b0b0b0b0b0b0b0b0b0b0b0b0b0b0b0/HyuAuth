@@ -26,6 +26,10 @@ public class AuthManager {
         this.joinLocations = new ConcurrentHashMap<>();
     }
 
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+
     public CompletableFuture<Boolean> isRegistered(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> databaseManager.isUserRegistered(uuid));
     }

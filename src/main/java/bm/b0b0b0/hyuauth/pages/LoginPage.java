@@ -49,7 +49,7 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
             Player playerComponent = store.getComponent(ref, Player.getComponentType());
             if (playerComponent != null && data.pressedButton != null) {
                 if (data.pressedButton.equals("CancelButton")) {
-                    this.playerRef.getPacketHandler().disconnect("You cannot play in this server without login");
+                    this.playerRef.getPacketHandler().disconnect("Вы не можете играть на этом сервере без авторизации.");
                 } else if (data.pressedButton.equals("SubmitButton")) {
                     this.handlePasswordAuthentication(ref, store, playerComponent);
                 } else {
@@ -73,7 +73,7 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
             String errorMessage = getLocalizedErrorMessage(result.Message);
             this.displayError(errorMessage);
         } else {
-            com.hypixel.hytale.server.core.Message successMessage = com.hypixel.hytale.server.core.Message.translation("hyuauth.messages.login_success")
+            com.hypixel.hytale.server.core.Message successMessage = com.hypixel.hytale.server.core.Message.raw("Авторизация успешна!")
                     .color("#00FF00")
                     .bold(true);
             playerComponent.sendMessage(successMessage);
@@ -100,7 +100,7 @@ public class LoginPage extends InteractiveCustomUIPage<LoginPage.LoginEventData>
                         System.out.println("[HyuAuth] [LoginPage] Timeout check - UUID: " + playerUuid + ", isAuthenticated: " + isAuthenticated);
                         if (isAuthenticated == null || !isAuthenticated) {
                             System.out.println("[HyuAuth] [LoginPage] Kicking player due to timeout");
-                            LoginPage.this.playerRef.getPacketHandler().disconnect(Message.translation("hyuauth.messages.timeout_kick").getAnsiMessage());
+                            LoginPage.this.playerRef.getPacketHandler().disconnect("Время на вход истекло! Пожалуйста, переподключитесь.");
                         } else {
                             System.out.println("[HyuAuth] [LoginPage] Player is authenticated, not kicking");
                         }

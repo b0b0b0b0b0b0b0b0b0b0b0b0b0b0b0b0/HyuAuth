@@ -53,7 +53,7 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
             Player playerComponent = store.getComponent(ref, Player.getComponentType());
             if (playerComponent != null && data.PressedButton != null) {
                 if (data.PressedButton.equals("CancelButton")) {
-                    this.playerRef.getPacketHandler().disconnect(Message.translation("You need register to play in this world.").getAnsiMessage());
+                    this.playerRef.getPacketHandler().disconnect("Вам нужно зарегистрироваться для игры на этом сервере.");
                 } else if (data.PressedButton.equals("SubmitButton")) {
                     System.out.println("[HyuAuth] [RegisterPage] Submit button pressed, validating fields...");
                     if (this.validateFields()) {
@@ -103,7 +103,7 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
             this.displayError(errorMessage);
         } else {
             System.out.println("[HyuAuth] [RegisterPage] Registration successful, closing page");
-            com.hypixel.hytale.server.core.Message successMessage = com.hypixel.hytale.server.core.Message.translation("hyuauth.messages.registration_success")
+            com.hypixel.hytale.server.core.Message successMessage = com.hypixel.hytale.server.core.Message.raw("Регистрация успешна!")
                     .color("#00FF00")
                     .bold(true);
             playerComponent.sendMessage(successMessage);
@@ -130,7 +130,7 @@ public class RegisterPage extends InteractiveCustomUIPage<RegisterPage.RegisterE
                         System.out.println("[HyuAuth] [RegisterPage] Timeout check - UUID: " + playerUuid + ", isAuthenticated: " + isAuthenticated);
                         if (isAuthenticated == null || !isAuthenticated) {
                             System.out.println("[HyuAuth] [RegisterPage] Kicking player due to timeout");
-                            RegisterPage.this.playerRef.getPacketHandler().disconnect(Message.translation("hyuauth.messages.timeout_kick").getAnsiMessage());
+                            RegisterPage.this.playerRef.getPacketHandler().disconnect("Время на вход истекло! Пожалуйста, переподключитесь.");
                         } else {
                             System.out.println("[HyuAuth] [RegisterPage] Player is authenticated, not kicking");
                         }

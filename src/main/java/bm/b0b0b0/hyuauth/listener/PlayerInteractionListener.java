@@ -81,7 +81,7 @@ public class PlayerInteractionListener {
                     } catch (Exception ignored) {
                     }
                 }
-                sender.sendMessage(Message.translation("hyuauth.messages.blocked").color("#FF0000").bold(true));
+                sender.sendMessage(Message.raw("Заблокировано! Авторизуйтесь через окно").color("#FF0000").bold(true));
             }
         } catch (Exception ignored) {
         }
